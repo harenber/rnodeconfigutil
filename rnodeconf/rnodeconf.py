@@ -40,7 +40,7 @@ rnode = None
 rnode_serial = None
 rnode_baudrate = 115200
 known_keys = [["unsigned.io", "30819f300d06092a864886f70d010101050003818d0030818902818100e5d46084e445595376bf7efd9c6ccf19d39abbc59afdb763207e4ff68b8d00ebffb63847aa2fe6dd10783d3ea63b55ac66f71ad885c20e223709f0d51ed5c6c0d0b093be9e1d165bb8a483a548b67a3f7a1e4580f50e75b306593fa6067ae259d3e297717bd7ff8c8f5b07f2bed89929a9a0321026cf3699524db98e2d18fb2d020300ff39"]]
-ranges = { 0xA4: [410000000, 525000000, 14], 0xA9: [820000000, 1020000000, 17] }
+ranges = { 0xA4: [410000000, 525000000, 14], 0xA9: [820000000, 1020000000, 17], 0xB1: [820000000, 1020000000, 17] }
 firmware_update_url = "https://github.com/markqvist/RNode_Firmware/raw/master/Precompiled/rnode_firmware_latest.hex"
 
 class RNS():
@@ -94,6 +94,7 @@ class KISS():
     CMD_ROM_WIPE    = 0x59
     CMD_CONF_SAVE   = 0x53
     CMD_CONF_DELETE = 0x54
+    CMD_ROM_COMMIT  = 0x5A
 
     DETECT_REQ      = 0x73
     DETECT_RESP     = 0x46
@@ -117,6 +118,7 @@ class ROM():
     PRODUCT_RNODE  = 0x03
     MODEL_A4       = 0xA4
     MODEL_A9       = 0xA9
+    MODEL_B1       = 0xB1
 
     ADDR_PRODUCT   = 0x00
     ADDR_MODEL     = 0x01
@@ -457,6 +459,12 @@ class RNode():
         write_payload = b"" + bytes([addr, byte])
         write_payload = KISS.escape(write_payload)
         kiss_command = bytes([KISS.FEND, KISS.CMD_ROM_WRITE]) + write_payload + bytes([KISS.FEND])
+        written = self.serial.write(kiss_command)
+        if written != len(kiss_command):
+            raise IOError("An IO error occurred while writing EEPROM")
+
+    def commit_eeprom(self):
+        kiss_command = bytes([KISS.FEND, KISS.CMD_ROM_COMMIT, 0x00, KISS.FEND])
         written = self.serial.write(kiss_command)
         if written != len(kiss_command):
             raise IOError("An IO error occurred while writing EEPROM")
@@ -929,6 +937,8 @@ def main():
                         model = ROM.MODEL_A4
                     if args.model == "a9":
                         model = ROM.MODEL_A9
+                    if args.model == "B1":
+                        model = ROM.MODEL_B1
                     if args.hwrev != None and (args.hwrev > 0 and args.hwrev < 256):
                         hwrev = chr(args.hwrev)
 
@@ -1019,6 +1029,7 @@ def main():
                                 time.sleep(0.006)
 
                             rnode.write_eeprom(ROM.ADDR_INFO_LOCK, ROM.INFO_LOCK_BYTE)
+                            rnode.commit_eeprom()
 
                             RNS.log("EEPROM written! Validating...")
                             rnode.download_eeprom()

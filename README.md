@@ -1,5 +1,9 @@
 # RNode Configuration Utility
 
+##
+
+This is a patched version to use with the [ESP32 enabled code}(https://github.com/harenber/RNode_Firmware)!!!
+
 ## Introduction
 
 Configure, flash, backup and upgrade your [RNode](https://unsigned.io/projects/rnode/) with this handy utility. The only required option is the serial port the device is attached to. To show basic device info, use the -i option.
